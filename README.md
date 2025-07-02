@@ -1,12 +1,17 @@
-# MATLAB extension for Visual Studio Code
-This extension provides support for editing, running, and debugging MATLAB&reg; code in Visual Studio&reg; Code and includes features such as syntax highlighting, code analysis, navigation support, and more. 
+> **Fork Notice**  
+> This repository is an *unmodified* fork of [mathworks/MATLAB-extension-for-vscode](https://github.com/mathworks/MATLAB-extension-for-vscode).  
+> All authorship, copyright, and ownership remain with the original authors.  
+> Modifications are limited to packaging and publication on the OpenVSX Marketplace.
+
+# MATLAB extension for Windsurf
+This extension provides support for editing, running, and debugging MATLAB&reg; code in Windsurf and includes features such as syntax highlighting, code analysis, navigation support, and more. 
 
 You can use this extension with or without MATLAB installed on your system. However, to make use of the advanced features of the extension or run MATLAB code, you must have MATLAB R2021b or later installed. For more information, see the [Get Started](#get-started) section.
 
 **Note:** This extension no longer supports MATLAB R2021a. To use advanced features or run MATLAB code, you must have MATLAB R2021b or later installed.
 
 ## Installation
-You can install the extension from within Visual Studio Code or download it from [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MathWorks.language-matlab). After installing the extension, you might need to configure it to make full use of all the features. For more information, see the [Configuration](#configuration) section.
+You can install the extension from within Windsurf or download it from [OpenVSX Registry](https://open-vsx.org/extension/chrisatwindsurf/MATLAB-extension-for-windsurf). After installing the extension, you might need to configure it to make full use of all the features. For more information, see the [Configuration](#configuration) section.
 
 ## Get Started
 To get started using the extension, open any MATLAB code file (.m), or create a new file and set the language to MATLAB.
@@ -33,10 +38,10 @@ If you have MATLAB R2021b or later installed on your system, you have access to 
 ![MATLAB Extension Demo](public/AdvancedFeatures.gif)
 
 ## Run and Debug MATLAB Code
-To run a MATLAB code file in Visual Studio Code, click the Run button at the top of the file. You also can use the `Run File` or `Run Current Selection` commands. When you run the file, output displays in the "Terminal" pane of Visual Studio Code. You also can enter MATLAB code directly in the MATLAB terminal. To stop execution of MATLAB code, press **Ctrl+C**.
+To run a MATLAB code file in Windsurf, click the Run button at the top of the file. You also can use the `Run File` or `Run Current Selection` commands. When you run the file, output displays in the "Terminal" pane of Windsurf. You also can enter MATLAB code directly in the MATLAB terminal. To stop execution of MATLAB code, press **Ctrl+C**.
 
-To debug a MATLAB code file, add breakpoints to the file by clicking the area to the left of an executable line. Then run the file. Visual Studio Code stops at the first breakpoint. 
-When Visual Studio Code is paused, you can use the **Debug toolbar** to peforms debugging actions such as **Continue**, **Step into**, and **Stop**. You also can enter commands in the MATLAB terminal to perform debug actions or change variable values. Use the **Run and Debug** view to see your workspace variables, watch points, and call stack.
+To debug a MATLAB code file, add breakpoints to the file by clicking the area to the left of an executable line. Then run the file. Windsurf stops at the first breakpoint. 
+When Windsurf is paused, you can use the **Debug toolbar** to peforms debugging actions such as **Continue**, **Step into**, and **Stop**. You also can enter commands in the MATLAB terminal to perform debug actions or change variable values. Use the **Run and Debug** view to see your workspace variables, watch points, and call stack.
 
 ![MATLAB Execution Demo](public/RunDebugCode.gif)
 
@@ -44,8 +49,8 @@ When Visual Studio Code is paused, you can use the **Debug toolbar** to peforms 
 There are some limitations to running and debugging MATLAB code in Visual Studio Code:
 * Output from timers, callbacks, and DataQueue objects is not shown in the Command Window.
 * Creating a custom run configuration for a file is not supported.
-* When using the **dbstop** and **dbclear** functions to set and clear breakpoints, the breakpoints are added to file but are not shown in Visual Studio Code.
-* Variable values changed in the MATLAB terminal when Visual Studio Code is paused do not update in the **Run and Debug** view until the next time Visual Studio Code pauses.
+* When using the **dbstop** and **dbclear** functions to set and clear breakpoints, the breakpoints are added to file but are not shown in Windsurf.
+* Variable values changed in the MATLAB terminal when Windsurf is paused do not update in the **Run and Debug** view until the next time Windsurf pauses.
 
 ## Configuration
 To configure the extension, go to the extension settings and select from the available options.
@@ -73,7 +78,7 @@ By default, the extension indexes all the MATLAB code files (`.m`) in your curre
 You can disable indexing to improve the performance of the extension. To disable indexing, set the `MATLAB.indexWorkspace` setting to `false`. Disabling indexing can cause features such as code navigation not to function as expected.
 
 ### MATLAB Connection Timing Setting
-By default, the extension starts MATLAB in the background when you open a MATLAB code file in Visual Studio Code. To control when the extension starts MATLAB, set the `MATLAB.matlabConnectionTiming` setting to one of these values: 
+By default, the extension starts MATLAB in the background when you open a MATLAB code file in Windsurf. To control when the extension starts MATLAB, set the `MATLAB.matlabConnectionTiming` setting to one of these values: 
 * `onStart` (default) — Start MATLAB as soon as a MATLAB code file is opened.
 * `onDemand` — Start MATLAB only when needed for a given action.
 * `never` — Never start MATLAB.
@@ -112,7 +117,7 @@ Release date: 2024-12-18
 Added:
 * Debugging support
 * Support for inserting code snippets shipped with MATLAB (requires MATLAB R2025a or later)
-* Support for opening additional MATLAB file types (e.g. `.slx`, `.fig`) from the Visual Studio Code context menu (Community contribution from @Gusmano-2-OSU)
+* Support for opening additional MATLAB file types (e.g. `.slx`, `.fig`) from the Windsurf context menu (Community contribution from @Gusmano-2-OSU)
  
 Fixed:
 * Syntax highlighting improvements (Community contribution from @apozharski)
