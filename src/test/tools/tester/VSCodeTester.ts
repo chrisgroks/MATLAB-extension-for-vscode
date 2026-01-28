@@ -3,24 +3,25 @@ import * as vet from 'vscode-extension-tester'
 import * as path from 'path'
 import * as PollingUtils from '../utils/PollingUtils'
 import { TerminalTester } from './TerminalTester'
-import { DebuggerTester } from './DebuggerTester'
+import * as assert from 'assert'
+import { EditorTester } from './EditorTester'
 
 /**
  * VSCodeTester
  * Based on vscode-extention-tester. This is used for the ui tests under test/ui
 */
 export class VSCodeTester {
+    private readonly vs: VSCodeTester
     private readonly browser: vet.VSBrowser
-    private readonly workbench: vet.Workbench
     private readonly statusbar: vet.StatusBar
+    public readonly workbench: vet.Workbench
     public terminal!: TerminalTester
-    public debugger!: DebuggerTester
 
     public constructor () {
+        this.vs = this
         this.browser = vet.VSBrowser.instance
         this.workbench = new vet.Workbench()
         this.statusbar = new vet.StatusBar()
-        this.debugger = new DebuggerTester(this.workbench)
     }
 
     /**
@@ -58,7 +59,7 @@ export class VSCodeTester {
      * wait for quickpick to contain a label
      */
     public async selectQuickPick (prompt: vet.InputBox, label: string): Promise<void> {
-        await PollingUtils.poll(this.checkForQuickPick.bind(this, prompt, label), true, `Expected quickpick to contain ${label}`, 5000)
+        await this.poll(this.checkForQuickPick.bind(this, prompt, label), true, `Expected quickpick to contain ${label}`, 5000)
         return await prompt.selectQuickPick(label);
     }
 
@@ -75,14 +76,14 @@ export class VSCodeTester {
      * Poll for MATLAB to connect to VSCode
      */
     public async assertMATLABConnected (): Promise<void> {
-        return await PollingUtils.poll(this.getConnectionStatus.bind(this), 'MATLAB: Connected', 'Expected MATLAB to be connected', 180000)
+        return await this.poll(this.getConnectionStatus.bind(this), 'MATLAB: Connected', 'Expected MATLAB to be connected', 180000)
     }
 
     /**
      * Poll for MATLAB to disconnect from VSCode
      */
     public async assertMATLABDisconnected (): Promise<void> {
-        return await PollingUtils.poll(this.getConnectionStatus.bind(this), 'MATLAB: Not Connected', 'Expected MATLAB to be disconnected')
+        return await this.poll(this.getConnectionStatus.bind(this), 'MATLAB: Not Connected', 'Expected MATLAB to be disconnected')
     }
 
     /**
@@ -95,10 +96,10 @@ export class VSCodeTester {
     /**
      * Open a file from the 'test-files' directory
      */
-    public async openEditor (filename: string): Promise<vet.TextEditor> {
+    public async openEditor (filename: string): Promise<EditorTester> {
         const filepath = path.resolve(this.getTestFilesDirectory(), filename)
         await this.browser.openResources(filepath)
-        return new vet.TextEditor()
+        return new EditorTester(this.vs)
     }
 
     /**
@@ -111,7 +112,8 @@ export class VSCodeTester {
             const dialog = new vet.ModalDialog()
             return await dialog.pushButton('Don\'t Save')
         }
-        return await new vet.EditorView().closeEditor(await editor.getTitle())
+        await new vet.EditorView().closeEditor(await editor.getTitle())
+        return await PollingUtils.pause(1000) // wait for editor to close
     }
 
     /**
@@ -121,9 +123,8 @@ export class VSCodeTester {
         const prompt = await this.workbench.openCommandPrompt() as vet.InputBox
         await prompt.setText('>matlab.openCommandWindow')
         await this.selectQuickPick(prompt, 'MATLAB: Open Command Window');
-        await this.assertMATLABConnected()
         const terminal = await new vet.BottomBarPanel().openTerminalView()
-        const terminalTester = new TerminalTester(this.workbench, terminal)
+        const terminalTester = new TerminalTester(this, terminal)
         this.terminal = terminalTester
         return terminalTester
     }
@@ -146,5 +147,46 @@ export class VSCodeTester {
         const setting = await editor.findSettingByID(id) as vet.CheckboxSetting;
         await setting.setValue(value)
         return await new vet.EditorView().closeEditor('Settings')
+    }
+
+    private async executeWorkbenchCommand (command: string): Promise<void> {
+        console.log(`Executing workbench command: ${command}`)
+        return await this.workbench.executeCommand(command)
+    }
+
+    /**
+    * Pause the test for the specified time
+    */
+    public async pause (ms: number): Promise<void> {
+        return await PollingUtils.pause(ms);
+    }
+
+    /**
+    * Poll for a function return the expected value. Default timeout is 30s
+    */
+    // eslint-disable-next-line
+    public async poll (fn: (...args: any[]) => any, value: any, message = '', timeout = 30000, onFailure?: (result: any) => Promise<void>): Promise<void> {
+        const interval = 1000;
+        const maxIterations = Math.ceil(timeout / interval);
+        let i = 0;
+        let result = await fn();
+
+        while (result !== value && i < maxIterations) {
+            await PollingUtils.pause(interval);
+            result = await fn();
+            i++;
+        }
+
+        if (result !== value) {
+            const filename = `test_failure_${new Date().toISOString().replace(/[:.]/g, '-')}`
+            await this.browser.takeScreenshot(filename)
+            console.log(`Screenshot saved as ${filename}.png`)
+        } else {
+            if (message !== '') {
+                console.log(`Assertion passed: ${message}`)
+            }
+        }
+
+        return assert.strictEqual(result, value, `Assertion failed after waiting for ${timeout}ms. ${message}`);
     }
 }

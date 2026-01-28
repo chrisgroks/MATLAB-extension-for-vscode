@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.8] - 2026-01-09
+
+### Added
+- Temporarily pause MATLAB execution by clicking the Pause button (Addresses [mathworks/MATLAB-extension-for-vscode#263](https://github.com/mathworks/MATLAB-extension-for-vscode/issues/263))
+- Improvements to symbol renaming, symbol highlighting, find references, and go to definitions as a result of advanced MATLAB program file indexing (Addresses [mathworks/MATLAB-extension-for-vscode#94](https://github.com/mathworks/MATLAB-extension-for-vscode/issues/94))
+- Default initial MATLAB debugger configuration
+
+### Fixed
+- Changes the default value of `MATLAB.defaultEditor` to `true`
+- Resolves an issue where the Run button displays an incorrect reason when a file cannot be run (Addresses [mathworks/MATLAB-extension-for-vscode#282](https://github.com/mathworks/MATLAB-extension-for-vscode/issues/282))
+- Resolves issues with the `savepath` function by ensuring that MATLAB language server files are not saved to the MATLAB search path (Addresses [mathworks/MATLAB-extension-for-vscode#299](https://github.com/mathworks/MATLAB-extension-for-vscode/issues/299))
+- Resolves potential crashes when breakpoints are set
+- Applied patches for CVE-2025-15284, CVE-2025-64718, CVE-2025-64756, and CVE-2025-65945
+
+## [1.3.7] - 2025-11-12
+
+### Fixed
+- Resolves an issue with the previous version build. Does not include any changes to the extension's code or features.
+
+## [1.3.6] - 2025-10-30
+
+### Fixed
+- MATLAB automatically closes after 5 minutes if the connection fails during startup, preventing leaked instances (Addresses [mathworks/MATLAB-extension-for-vscode#241](https://github.com/mathworks/MATLAB-extension-for-vscode/issues/241))
+- MATLAB now starts from the primary workspace folder, so that the `pwd` command returns the correct path during startup (Addresses [mathworks/MATLAB-extension-for-vscode#233](https://github.com/mathworks/MATLAB-extension-for-vscode/issues/233))
+- Resolves a crash that occurs when suppressing a linting diagnostic on a line with an existing comment (Addresses [mathworks/MATLAB-extension-for-vscode#280](https://github.com/mathworks/MATLAB-extension-for-vscode/issues/280))
+- Applied patches for CVE-2025-58751 and CVE-2025-58752
+
+## [1.3.5] - 2025-09-04
+
+### Added
+- Support for prewarming graphics to improve the performance of first-time graphics rendering 
+- Support for using Visual Studio Code as the default editor when using the MATLAB `edit` and `open` commands
+- Support for highlighting all references to a selected function, variable, class, or class property
+
+### Fixed
+- Resolves issue where newly saved document contents are ignored during execution
+- Resolves issue where section breaks are not displayed and the `Run Section` command does not work until a file is modified for the first time.
+- Applied patch for CVE-2025-54798
+
+## [1.3.4] - 2025-07-31
+
+### Added
+- Support for running sections in MATLAB code
+- Support for formatting a selection
+- Display the language server output panel using the `matlab.showLanguageServerOutput` command
+- Breadcrumbs and Outline view now include methods, properties, and enumerations for improved navigation
+
+### Fixed
+- Applied patches for CVE-2023-44270, CVE-2024-11831, CVE-2025-27789, CVE-2025-30359, CVE-2025-30360, CVE-2025-32996, CVE-2025-48387, and CVE-2025-5889
+- Resolves issue where extension stops working after calling `restoredefaultpath`
+
 ## [1.3.3] - 2025-05-15
 
 ### Added

@@ -66,7 +66,7 @@ const ACTION_KEYS = {
 
     MOVE_TO_POSITION_IN_LINE: (n: number) => ESC + '[' + n.toString() + 'G',
     CLEAR_AND_MOVE_TO_BEGINNING: ESC + '[0G' + ESC + '[0J',
-    CLEAR_COMPLETELY: ESC + '[2J' + ESC + '[1;1H',
+    CLEAR_COMPLETELY: ESC + '[2J' + ESC + '[3J' + ESC + '[1;1H',
 
     QUERY_CURSOR: ESC + '[6n',
     SET_CURSOR_STYLE_TO_BAR: ESC + '[5 q'
@@ -89,6 +89,8 @@ const PROMPTS = {
 // And the fifth part splits on unfinished quotes. ie. plot("C|
 // eslint-disable-next-line no-useless-escape
 const WORD_REGEX = /(-?\d*\.\d\w*)|(\"[^\"]*\"?)|(\'[^\']*\'?)|([^\`\~\!\@\#\%\^\&\*\(\)\-\=\+\[\{\]\}\\\|\;\:\'\"\,\.\<\>\/\?\s]+)|(\"|\')/
+
+type MatlabData = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 /**
  * Represents command window. Is a pseudoterminal to be used as the input/output processor in a VS Code terminal.
@@ -705,7 +707,6 @@ export default class CommandWindow implements vscode.Pseudoterminal {
      */
     clear (): void {
         this._writeEmitter.fire(ACTION_KEYS.CLEAR_COMPLETELY)
-        void vscode.commands.executeCommand('workbench.action.terminal.clear');
         this._setToEmptyPrompt();
     }
 
@@ -746,15 +747,15 @@ export default class CommandWindow implements vscode.Pseudoterminal {
         this._pendingTabCompletionRequestNumber = this._pendingTabCompletionRequestNumber + 1;
         this._notifier.sendNotification(Notification.TerminalCompletionRequest, {
             requestId: this._pendingTabCompletionRequestNumber,
-            code: code,
-            offset: offset
+            code,
+            offset
         });
 
         this._pendingTabCompletionPromise = createResolvablePromise<CompletionList>();
         return this._pendingTabCompletionPromise;
     }
 
-    private _handleCompletionDataResponse (data: any): void {
+    private _handleCompletionDataResponse (data: MatlabData): void {
         if (data.requestId === this._pendingTabCompletionRequestNumber && (this._pendingTabCompletionPromise != null)) {
             this._pendingTabCompletionPromise.resolve(data.result);
         }

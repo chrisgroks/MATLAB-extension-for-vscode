@@ -4,7 +4,6 @@ import * as path from 'path'
 import { ExTester, ReleaseQuality } from 'vscode-extension-tester'
 import * as PollingUtils from '../utils/PollingUtils'
 import * as fs from 'fs';
-import * as os from 'os';
 
 export class TestSuite {
     private readonly storageFolder: string
@@ -16,10 +15,7 @@ export class TestSuite {
     private readonly releaseQuality: ReleaseQuality
 
     public constructor () {
-        this.storageFolder = path.join(__dirname, '..', '..', '..', '..', '.vscode-test', 'test-resources')
-        if (os.platform() === 'darwin') {
-            this.storageFolder = os.tmpdir()
-        }
+        this.storageFolder = path.join(__dirname, '..', '..', '..', '..', '.s')
         this.mochaConfig = path.join(__dirname, '..', 'config', '.mocharc.js')
         const pjson = require(path.resolve('package.json')) // eslint-disable-line
         this.vsixPath = path.resolve(`${pjson.name}-${pjson.version}.vsix`) // eslint-disable-line
@@ -63,6 +59,7 @@ export class TestSuite {
      * Queues the array of tests provided to each run in a separate VSCode instance
      */
     public async enqueueTests (tests: string[]): Promise<void> {
+        let failed = false;
         const exTester = new ExTester(this.storageFolder, this.releaseQuality, undefined)
         await exTester.downloadCode(this.vscodeVersion)
         await exTester.downloadChromeDriver(this.vscodeVersion)
@@ -72,16 +69,26 @@ export class TestSuite {
             const testPath = path.join(this.testsRoot, test)
             console.log(`Running test: ${test}`)
             try {
-                await exTester.runTests(testPath, {
+                const exitCode = await exTester.runTests(testPath, {
                     resources: [this.storageFolder],
                     config: this.mochaConfig,
                     settings: this.vscodeSettings
                 })
+                if (exitCode !== 0) {
+                    failed = true;
+                    console.error('\x1b[31m%s\x1b[0m', `Test failed: ${test} (exit code: ${exitCode})`);
+                } else {
+                    console.log('\x1b[34m%s\x1b[0m', `Test passed: ${test}`);
+                }
             } catch (err) {
-                console.log(err)
-                process.exit(1)
+                failed = true;
+                console.error('\x1b[31m%s\x1b[0m', err)
             }
-            await PollingUtils.pause(10000); // wait for state to be reset before running next test
+            await PollingUtils.pause(30000); // wait for state to be reset before running next test
+        }
+        if (failed) {
+            console.error('\x1b[31m%s\x1b[0m', 'One or more tests failed.');
+            process.exit(1);
         }
     }
 }
