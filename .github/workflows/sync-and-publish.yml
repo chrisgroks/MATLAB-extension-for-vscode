@@ -1,0 +1,161 @@
+name: Sync Upstream & Publish to Open VSX
+
+on:
+  schedule:
+    # Check for upstream updates daily at 9 AM UTC
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+    inputs:
+      force_publish:
+        description: 'Force publish even if no upstream changes'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  check-upstream:
+    runs-on: ubuntu-latest
+    outputs:
+      has_updates: ${{ steps.check.outputs.has_updates }}
+      upstream_sha: ${{ steps.check.outputs.upstream_sha }}
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/mathworks/MATLAB-extension-for-vscode.git
+          git fetch upstream main
+
+      - name: Check for upstream updates
+        id: check
+        run: |
+          UPSTREAM_SHA=$(git rev-parse upstream/main)
+          echo "upstream_sha=$UPSTREAM_SHA" >> $GITHUB_OUTPUT
+          
+          # Check if we're behind upstream
+          BEHIND=$(git rev-list --count HEAD..upstream/main)
+          if [ "$BEHIND" -gt "0" ] || [ "${{ inputs.force_publish }}" == "true" ]; then
+            echo "has_updates=true" >> $GITHUB_OUTPUT
+            echo "📦 Found $BEHIND new commits from upstream"
+          else
+            echo "has_updates=false" >> $GITHUB_OUTPUT
+            echo "✅ Fork is up to date with upstream"
+          fi
+
+  sync-and-build:
+    needs: check-upstream
+    if: needs.check-upstream.outputs.has_updates == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Git
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+
+      - name: Sync with upstream
+        run: |
+          git remote add upstream https://github.com/mathworks/MATLAB-extension-for-vscode.git
+          git fetch upstream main
+          git merge upstream/main --no-edit -m "Sync with upstream (automated)"
+          
+      - name: Ensure Open VSX metadata is preserved
+        run: |
+          # Verify displayName contains "Open VSX Fork"
+          if ! grep -q "Open VSX Fork" package.json; then
+            echo "⚠️ Warning: displayName may have been overwritten by upstream"
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          npm install
+          git submodule update --init --recursive
+          cd server && npm install
+          cd src/licensing/gui && npm install
+
+      - name: Build extension
+        run: npm run compile
+
+      - name: Package extension
+        run: |
+          npx vsce package --no-dependencies --allow-missing-repository
+          echo "VSIX_FILE=$(ls *.vsix)" >> $GITHUB_ENV
+
+      - name: Push sync commit
+        run: git push origin main
+
+      - name: Create draft release for approval
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ github.run_number }}-pending
+          name: "🔄 Pending Release - Review Required"
+          body: |
+            ## Upstream Sync Ready for Review
+            
+            This release syncs with upstream commit: `${{ needs.check-upstream.outputs.upstream_sha }}`
+            
+            **To publish to Open VSX:**
+            1. Review the changes
+            2. Edit this release and uncheck "Set as a pre-release"
+            3. The publish workflow will trigger automatically
+            
+            Or manually trigger the publish workflow.
+          draft: true
+          prerelease: true
+          files: ${{ env.VSIX_FILE }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Send notification email
+        uses: dawidd6/action-send-mail@v3
+        if: ${{ vars.NOTIFICATION_EMAIL != '' }}
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "🔄 MATLAB Extension - Upstream Update Ready for Review"
+          body: |
+            A new upstream update has been synced and is ready for your review.
+            
+            Repository: ${{ github.repository }}
+            Upstream SHA: ${{ needs.check-upstream.outputs.upstream_sha }}
+            
+            Review and approve: ${{ github.server_url }}/${{ github.repository }}/releases
+          to: ${{ vars.NOTIFICATION_EMAIL }}
+          from: GitHub Actions
+
+  publish:
+    runs-on: ubuntu-latest
+    # This job runs when a release is published (not draft)
+    if: github.event_name == 'release' && github.event.action == 'published'
+    steps:
+      - name: Download release asset
+        uses: robinraju/release-downloader@v1
+        with:
+          latest: true
+          fileName: "*.vsix"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Publish to Open VSX
+        run: |
+          npx ovsx publish *.vsix -p ${{ secrets.OVSX_PAT }}
+          echo "🚀 Published to Open VSX!"
